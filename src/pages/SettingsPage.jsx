@@ -17,14 +17,12 @@ import {
 import { useStudy } from '../context/StudyContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTimer } from '../context/TimerContext';
-import { useAuth } from '../context/AuthContext';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
 export function SettingsPage() {
   const { settings, updateSettings, clearAllData, resetToSampleData, addToast } = useStudy();
   const { theme, toggleTheme } = useTheme();
   const { resetTimer } = useTimer();
-  const { currentUser, setIsAuthModalOpen } = useAuth();
 
   const [isClearDataConfirmOpen, setIsClearDataConfirmOpen] = useState(false);
   const [isResetSampleConfirmOpen, setIsResetSampleConfirmOpen] = useState(false);

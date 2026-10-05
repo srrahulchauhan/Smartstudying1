@@ -18,7 +18,6 @@ import { useStudy } from '../../context/StudyContext';
 import { useTimer } from '../../context/TimerContext';
 import { useTheme } from '../../context/ThemeContext';
 import { formatTimeFromTimestamp, getTodayDateString, formatFriendlyDate } from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 
 export function Header({
   onOpenMobileMenu,
@@ -52,7 +51,6 @@ export function Header({
   } = useTimer();
 
   const { theme, toggleTheme } = useTheme();
-  const { currentUser, setIsAuthModalOpen } = useAuth();
 
   // Live time ticker
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -214,17 +212,7 @@ export function Header({
           )}
         </button>
 
-        {/* User Account / Multi-Device Profile Button */}
-        <button
-          onClick={() => setIsAuthModalOpen(true)}
-          title={`Account: ${currentUser?.name || 'User'} (${currentUser?.email || 'Synced'})`}
-          className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-slate-100 dark:bg-dark-950 border border-slate-200/80 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 transition text-xs font-semibold"
-        >
-          <span className="text-base leading-none">{currentUser?.avatar || '🎓'}</span>
-          <span className="hidden lg:inline text-slate-700 dark:text-slate-200 max-w-[100px] truncate">
-            {currentUser?.name?.split(' ')[0] || 'Account'}
-          </span>
-        </button>
+
       </div>
     </header>
   );

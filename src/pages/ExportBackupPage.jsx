@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useStudy } from '../context/StudyContext';
 import { useTimer } from '../context/TimerContext';
-import { useAuth } from '../context/AuthContext';
 import { exportStudyDataToExcel } from '../utils/exportExcel';
 import { exportAllDataAsJSON, importAllDataFromJSON } from '../utils/storage';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -34,7 +33,6 @@ export function ExportBackupPage() {
     addToast,
   } = useStudy();
   const { resetTimer } = useTimer();
-  const { currentUser } = useAuth();
 
   const [excelFilter, setExcelFilter] = useState('all'); // 'all' | 'current_month' | 'custom'
   const [startDate, setStartDate] = useState('');

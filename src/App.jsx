@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
 import { StudyProvider } from './context/StudyContext';
 import { TimerProvider } from './context/TimerContext';
 
@@ -11,7 +10,6 @@ import { MobileNav } from './components/layout/MobileNav';
 import { GlobalSearchModal } from './components/layout/GlobalSearchModal';
 import { QuickActionModal } from './components/layout/QuickActionModal';
 import { ToastContainer } from './components/common/ToastContainer';
-import { AuthModal } from './components/auth/AuthModal';
 
 // Entity Creation Modals
 import { PreparationModal } from './components/preparations/PreparationModal';
@@ -235,8 +233,6 @@ function AppContent() {
         onClose={() => setIsNewGoalOpen(false)}
       />
 
-      {/* User Login & Multi-Device Auth Modal */}
-      <AuthModal />
 
       {/* Global In-App Toast Notifications */}
       <ToastContainer />
@@ -247,13 +243,11 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
         <StudyProvider>
           <TimerProvider>
             <AppContent />
           </TimerProvider>
         </StudyProvider>
-      </AuthProvider>
     </ThemeProvider>
   );
 }

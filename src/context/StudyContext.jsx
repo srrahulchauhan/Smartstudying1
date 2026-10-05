@@ -22,12 +22,11 @@ import {
 import { evaluateAutoAttendance } from '../utils/attendanceLogic';
 import { getTodayDateString } from '../utils/dateUtils';
 import { playSound } from '../utils/audio';
-import { useAuth } from './AuthContext';
 
 const StudyContext = createContext();
 
 export function StudyProvider({ children }) {
-  const { userId, currentUser } = useAuth();
+  const userId = 'local-user';
 
   // Ensure storage is initialized
   useEffect(() => {

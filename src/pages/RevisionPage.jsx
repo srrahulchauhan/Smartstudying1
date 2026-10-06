@@ -37,6 +37,7 @@ export function RevisionPage({ setActivePage }) {
   const completedTopics = topics.filter(t => t.status === 'Completed' || t.status === 'Revision').length;
   const totalTopics = topics.length || 1;
   const revisionProgress = Math.round((completedTopics / totalTopics) * 100);
+  const pendingRevisionCount = topics.filter(t => t.status === 'Revision').length;
   
   return (
     <div className="space-y-6 pb-12">
@@ -127,7 +128,7 @@ export function RevisionPage({ setActivePage }) {
               <Clock size={20} />
             </div>
             <span className="px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-              Due Today
+              {pendingRevisionCount > 0 ? `${pendingRevisionCount} Due Today` : 'Due Today'}
             </span>
           </div>
           <h3 className="font-bold text-slate-900 dark:text-white text-lg relative z-10">Today's Revision</h3>

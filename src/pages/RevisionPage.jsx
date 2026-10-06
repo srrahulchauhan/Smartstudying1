@@ -12,11 +12,14 @@ import {
   BrainCircuit,
   Calendar,
   BookOpen,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from 'lucide-react';
 import { useStudy } from '../context/StudyContext';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { RevisionModal } from '../components/revision/RevisionModal';
+import { TopicModal } from '../components/topics/TopicModal';
+import { SubjectModal } from '../components/subjects/SubjectModal';
 
 export function RevisionPage({ setActivePage }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +27,9 @@ export function RevisionPage({ setActivePage }) {
   
   // Modal state
   const [activeModalMode, setActiveModalMode] = useState(null); // 'today', 'quick', 'practice', 'wrong', 'flashcards', 'notes', 'test'
+  
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   
   const { topics } = useStudy();
   
@@ -52,12 +58,29 @@ export function RevisionPage({ setActivePage }) {
 
         {/* Progress & Actions */}
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-          <div className="w-full sm:w-48 space-y-1.5">
+          <div className="w-full sm:w-48 space-y-1.5 hidden sm:block">
             <div className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
               <span>Overall Progress</span>
               <span>{revisionProgress}%</span>
             </div>
             <ProgressBar value={revisionProgress} max={100} showLabel={false} height="h-2.5" color="bg-gradient-to-r from-brand-500 to-indigo-500" />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setIsSubjectModalOpen(true)}
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-2 transition"
+            >
+              <Plus size={14} />
+              <span>Add Subject</span>
+            </button>
+            <button
+              onClick={() => setIsTopicModalOpen(true)}
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition"
+            >
+              <Plus size={14} />
+              <span>Add Topic</span>
+            </button>
           </div>
         </div>
       </div>
@@ -302,6 +325,16 @@ export function RevisionPage({ setActivePage }) {
         onClose={() => setActiveModalMode(null)} 
         mode={activeModalMode} 
         setActivePage={setActivePage}
+      />
+
+      <TopicModal
+        isOpen={isTopicModalOpen}
+        onClose={() => setIsTopicModalOpen(false)}
+      />
+
+      <SubjectModal
+        isOpen={isSubjectModalOpen}
+        onClose={() => setIsSubjectModalOpen(false)}
       />
     </div>
   );

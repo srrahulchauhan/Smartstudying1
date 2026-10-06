@@ -4,7 +4,7 @@ import { useStudy } from '../../context/StudyContext';
 import { useTimer } from '../../context/TimerContext';
 
 export function RevisionModal({ isOpen, onClose, mode, setActivePage }) {
-  const { topics, subjects } = useStudy();
+  const { topics, subjects, addToast } = useStudy();
   const { startStudy } = useTimer();
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -111,10 +111,20 @@ export function RevisionModal({ isOpen, onClose, mode, setActivePage }) {
       </div>
       <h3 className="text-xl font-bold text-slate-900 dark:text-white">Practice Mode</h3>
       <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-        Generate custom multiple-choice questions for your completed topics to test your retention.
+        Start a dedicated practice timer session to test your knowledge.
       </p>
-      <button className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30">
-        Generate 10 Questions
+      <button 
+        onClick={() => {
+          addToast('Starting Practice Session...', 'info');
+          startStudy({
+            targetDurationMinutes: 30,
+          });
+          onClose();
+          setActivePage('timer');
+        }}
+        className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30"
+      >
+        Start Practice Timer
       </button>
     </div>
   );
@@ -134,25 +144,30 @@ export function RevisionModal({ isOpen, onClose, mode, setActivePage }) {
     </div>
   );
   
-  const renderMyNotes = () => (
-    <div className="space-y-4 py-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Saved Notes</h3>
-        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg">
-          + New Note
-        </button>
-      </div>
-      {revisionTopics.slice(0, 3).map((topic, i) => (
-        <div key={topic.id} className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/20">
-          <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1">{topic.name} Notes</h4>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Important formulas and derivations discussed in this chapter...
-          </p>
-          <span className="text-[10px] text-slate-400 mt-2 block">Last edited {i + 1} days ago</span>
+  const renderMyNotes = () => {
+    const notesTopics = topics.filter(t => t.description && t.description.trim() !== '');
+    return (
+      <div className="space-y-4 py-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Saved Notes</h3>
         </div>
-      ))}
-    </div>
-  );
+        {notesTopics.length === 0 ? (
+          <div className="p-6 text-center text-slate-500 bg-slate-50 dark:bg-dark-900 rounded-xl">No notes found. Add descriptions to your topics to see them here!</div>
+        ) : (
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+            {notesTopics.map((topic, i) => (
+              <div key={topic.id} className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/20 text-left">
+                <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1">{topic.name} Notes</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                  {topic.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderTestYourself = () => (
     <div className="space-y-4 text-center py-10">
@@ -161,10 +176,20 @@ export function RevisionModal({ isOpen, onClose, mode, setActivePage }) {
       </div>
       <h3 className="text-xl font-bold text-slate-900 dark:text-white">Mock Test</h3>
       <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-        Simulate an exam environment with a mix of questions from all your completed topics.
+        Simulate an exam environment with a full mock test timer.
       </p>
-      <button className="mt-4 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30">
-        Start Full Mock Test
+      <button 
+        onClick={() => {
+          addToast('Starting Full Mock Test Timer...', 'info');
+          startStudy({
+            targetDurationMinutes: 180,
+          });
+          onClose();
+          setActivePage('timer');
+        }}
+        className="mt-4 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30"
+      >
+        Start Full Mock Test Timer
       </button>
     </div>
   );

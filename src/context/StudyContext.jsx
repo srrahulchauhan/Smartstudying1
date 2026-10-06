@@ -505,6 +505,15 @@ export function StudyProvider({ children }) {
     addToast("Session deleted", "info");
   };
 
+  const updateSession = (id, updatedFields) => {
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, ...updatedFields, updatedAt: new Date().toISOString() } : s
+      )
+    );
+    addToast("Session updated successfully", "success");
+  };
+
   // ----------------------------------------------------
   // MANUAL ATTENDANCE
   // ----------------------------------------------------
@@ -760,6 +769,7 @@ export function StudyProvider({ children }) {
 
     sessions,
     addSession,
+    updateSession,
     deleteSession,
 
     attendance,

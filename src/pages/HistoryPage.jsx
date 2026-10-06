@@ -9,15 +9,17 @@ import {
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
+  Edit2,
 } from 'lucide-react';
 import { useStudy } from '../context/StudyContext';
 import { StatusBadge } from '../components/common/Badge';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { Modal } from '../components/common/Modal';
 import { formatFriendlyDate } from '../utils/dateUtils';
 import { formatSecondsToShort, formatSecondsToHMS } from '../utils/timerUtils';
 
 export function HistoryPage() {
-  const { sessions, subjects, topics, preparations, deleteSession } = useStudy();
+  const { sessions, subjects, topics, preparations, deleteSession, updateSession } = useStudy();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [prepFilter, setPrepFilter] = useState('all');
@@ -26,6 +28,8 @@ export function HistoryPage() {
   const [sortBy, setSortBy] = useState('date-desc'); // 'date-desc' | 'date-asc' | 'duration-desc' | 'duration-asc'
   const [expandedSessionId, setExpandedSessionId] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [editingSession, setEditingSession] = useState(null);
+  const [editMinutes, setEditMinutes] = useState(0);
 
   // Filtered & sorted sessions
   const filteredSessions = sessions
@@ -266,6 +270,16 @@ export function HistoryPage() {
                       )}
 
                       <button
+                        onClick={() => {
+                          setEditingSession(sess);
+                          setEditMinutes(Math.round((sess.actualStudyDuration || 0) / 60));
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition"
+                        title="Edit Session"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
                         onClick={() => setDeleteTargetId(sess.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
                         title="Delete Session"
@@ -326,6 +340,52 @@ export function HistoryPage() {
         confirmText="Yes, Delete"
         isDestructive={true}
       />
+
+      {/* Edit Session Modal */}
+      <Modal
+        isOpen={!!editingSession}
+        onClose={() => setEditingSession(null)}
+        title="Edit Session Time"
+        maxWidth="max-w-sm"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Actual Study Time (Minutes)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={editMinutes}
+              onChange={(e) => setEditMinutes(parseInt(e.target.value) || 0)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none"
+            />
+          </div>
+          
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => setEditingSession(null)}
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (editingSession) {
+                  updateSession(editingSession.id, {
+                    actualStudyDuration: editMinutes * 60,
+                    totalDuration: editMinutes * 60 + (editingSession.breakDuration || 0)
+                  });
+                  setEditingSession(null);
+                }
+              }}
+              className="px-5 py-2 text-sm font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

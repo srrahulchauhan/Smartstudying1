@@ -18,7 +18,7 @@ import { useTimer } from '../context/TimerContext';
 import { StatusBadge, PriorityBadge } from '../components/common/Badge';
 import { TopicModal } from '../components/topics/TopicModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
-import { formatFriendlyDate } from '../utils/dateUtils';
+import { formatFriendlyDate, getTodayDateString, formatTimeString } from '../utils/dateUtils';
 import { formatMinutesToShort } from '../utils/timerUtils';
 
 export function TopicsPage({ setActivePage, selectedSubjectId = null }) {
@@ -28,6 +28,8 @@ export function TopicsPage({ setActivePage, selectedSubjectId = null }) {
     preparations,
     setTopicStatus,
     deleteTopic,
+    addSession,
+    settings,
   } = useStudy();
 
   const {
@@ -281,6 +283,25 @@ export function TopicsPage({ setActivePage, selectedSubjectId = null }) {
                           completeTopicAndStop();
                         } else {
                           setTopicStatus(top.id, 'Completed');
+                          const studyMinutes = top.estimatedStudyTime || 0;
+                          if (studyMinutes > 0) {
+                            const now = new Date();
+                            const startTime = new Date(now.getTime() - studyMinutes * 60 * 1000);
+                            addSession({
+                              date: getTodayDateString(),
+                              preparationId: sub?.preparationId,
+                              subjectId: top.subjectId,
+                              topicId: top.id,
+                              startTime: formatTimeString(startTime.toTimeString().slice(0, 5), settings?.timeFormat !== '24h'),
+                              endTime: formatTimeString(now.toTimeString().slice(0, 5), settings?.timeFormat !== '24h'),
+                              totalDuration: studyMinutes * 60,
+                              breakDuration: 0,
+                              actualStudyDuration: studyMinutes * 60,
+                              breaks: [],
+                              status: 'Completed',
+                              notes: 'Directly marked as completed',
+                            });
+                          }
                         }
                       }}
                       className="px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-50 hover:bg-brand-100 dark:bg-brand-950 dark:hover:bg-brand-900 text-brand-600 dark:text-brand-300 flex items-center gap-1 transition"

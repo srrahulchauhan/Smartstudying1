@@ -3,6 +3,68 @@ import { Modal } from '../common/Modal';
 import { useStudy } from '../../context/StudyContext';
 import { DAYS_OF_WEEK } from '../../utils/dateUtils';
 
+const CustomTimePicker = ({ value, onChange }) => {
+  const [hour, setHour] = React.useState('12');
+  const [minute, setMinute] = React.useState('00');
+  const [ampm, setAmpm] = React.useState('AM');
+
+  React.useEffect(() => {
+    if (value) {
+      const [hStr, mStr] = value.split(':');
+      let h = parseInt(hStr, 10);
+      const isPm = h >= 12;
+      if (h === 0) h = 12;
+      if (h > 12) h -= 12;
+      setHour(h.toString().padStart(2, '0'));
+      setMinute(mStr);
+      setAmpm(isPm ? 'PM' : 'AM');
+    }
+  }, [value]);
+
+  const handleChange = (newH, newM, newA) => {
+    let h24 = parseInt(newH, 10);
+    if (newA === 'PM' && h24 !== 12) h24 += 12;
+    if (newA === 'AM' && h24 === 12) h24 = 0;
+    const h24Str = h24.toString().padStart(2, '0');
+    onChange(`${h24Str}:${newM}`);
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 w-full">
+      <select
+        value={hour}
+        onChange={(e) => handleChange(e.target.value, minute, ampm)}
+        className="w-full px-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none text-center appearance-none"
+      >
+        {Array.from({ length: 12 }, (_, i) => {
+          const val = (i + 1).toString().padStart(2, '0');
+          return <option key={val} value={val}>{val}</option>;
+        })}
+      </select>
+      <span className="text-slate-400 font-bold">:</span>
+      <select
+        value={minute}
+        onChange={(e) => handleChange(hour, e.target.value, ampm)}
+        className="w-full px-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none text-center appearance-none"
+      >
+        {Array.from({ length: 60 }, (_, i) => {
+          const val = i.toString().padStart(2, '0');
+          return <option key={val} value={val}>{val}</option>;
+        })}
+      </select>
+      <select
+        value={ampm}
+        onChange={(e) => handleChange(hour, minute, e.target.value)}
+        className="w-full px-2 py-2.5 rounded-xl border border-brand-200 dark:border-brand-900 bg-brand-50 dark:bg-brand-950/30 text-sm font-bold text-brand-700 dark:text-brand-300 focus:border-brand-500 outline-none text-center appearance-none"
+      >
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+};
+
+
 export function TimetableModal({ isOpen, onClose, initialData = null, defaultDay = 'Monday' }) {
   const { preparations, subjects, topics, activePrepId, addTimetableSlot, updateTimetableSlot } = useStudy();
 
@@ -109,11 +171,9 @@ export function TimetableModal({ isOpen, onClose, initialData = null, defaultDay
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
               Start Time *
             </label>
-            <input
-              type="time"
+            <CustomTimePicker
               value={formData.startTime}
-              onChange={(e) => {
-                const newStartTime = e.target.value;
+              onChange={(newStartTime) => {
                 let newDuration = formData.targetDuration;
                 if (newStartTime && formData.endTime) {
                   const [sH, sM] = newStartTime.split(':').map(Number);
@@ -124,7 +184,6 @@ export function TimetableModal({ isOpen, onClose, initialData = null, defaultDay
                 }
                 setFormData({ ...formData, startTime: newStartTime, targetDuration: newDuration });
               }}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none"
             />
             {errors.startTime && <p className="text-xs text-rose-500 mt-1">{errors.startTime}</p>}
           </div>
@@ -133,11 +192,9 @@ export function TimetableModal({ isOpen, onClose, initialData = null, defaultDay
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
               End Time *
             </label>
-            <input
-              type="time"
+            <CustomTimePicker
               value={formData.endTime}
-              onChange={(e) => {
-                const newEndTime = e.target.value;
+              onChange={(newEndTime) => {
                 let newDuration = formData.targetDuration;
                 if (formData.startTime && newEndTime) {
                   const [sH, sM] = formData.startTime.split(':').map(Number);
@@ -148,7 +205,6 @@ export function TimetableModal({ isOpen, onClose, initialData = null, defaultDay
                 }
                 setFormData({ ...formData, endTime: newEndTime, targetDuration: newDuration });
               }}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none"
             />
             {errors.endTime && <p className="text-xs text-rose-500 mt-1">{errors.endTime}</p>}
           </div>

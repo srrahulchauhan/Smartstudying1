@@ -34,7 +34,7 @@ export const initialTargets = {
     },
   },
   monthly: {
-    month: '',
+    month: "",
     year: 2026,
     targetHours: 100,
   },
@@ -50,12 +50,15 @@ export const initialSettings = {
     longBreakMinutes: 15,
     cyclesBeforeLongBreak: 4,
   },
-  breakReasons: ['Tea', 'Food', 'Rest', 'Phone', 'Personal', 'Other'],
+  breakReasons: ["Tea", "Food", "Rest", "Phone", "Personal", "Other"],
   soundEnabled: true,
-  theme: 'dark', // 'dark' | 'light'
-  timeFormat: '12h', // '12h' | '24h'
-  weekStartDay: 'Monday', // 'Monday' | 'Sunday'
+  theme: "dark", // 'dark' | 'light'
+  timeFormat: "12h", // '12h' | '24h'
+  weekStartDay: "Monday", // 'Monday' | 'Sunday'
   browserNotifications: false,
+  googleSheetsSyncEnabled: false,
+  googleSheetsSyncUrl: "",
+  googleSheetsSyncKey: "",
 };
 
 export const initialNotifications = [];

@@ -1,37 +1,40 @@
-import React from 'react';
 import {
-  Timer,
-  Clock,
   Calendar,
-  BookOpen,
-  ListTodo,
-  UserCheck,
-  Trophy,
-  Flame,
-  ArrowUpRight,
-  Play,
-  Coffee,
   CheckCircle2,
-  AlertCircle,
-  Plus,
   ChevronRight,
+  Clock,
+  Flame,
+  ListTodo,
+  Play,
+  Plus,
+  Sparkles,
+  Timer,
   TrendingUp,
-} from 'lucide-react';
-import { useStudy } from '../context/StudyContext';
-import { useTimer } from '../context/TimerContext';
-import { StatCard } from '../components/common/StatCard';
-import { ProgressBar } from '../components/common/ProgressBar';
-import { StatusBadge, PriorityBadge } from '../components/common/Badge';
-import { DailyBarChart, SubjectBreakdownChart } from '../components/analytics/Charts';
+  Trophy,
+  UserCheck,
+} from "lucide-react";
 import {
-  getTodayDateString,
-  formatFriendlyDate,
-  getDayNameFromDate,
+  DailyBarChart,
+  SubjectBreakdownChart,
+} from "../components/analytics/Charts";
+import { PriorityBadge, StatusBadge } from "../components/common/Badge";
+import { ProgressBar } from "../components/common/ProgressBar";
+import { StatCard } from "../components/common/StatCard";
+import { useStudy } from "../context/StudyContext";
+import { useTimer } from "../context/TimerContext";
+import { computeAttendanceStats } from "../utils/attendanceLogic";
+import {
   calculateStudyStreaks,
+  formatFriendlyDate,
   getCurrentWeekDates,
-} from '../utils/dateUtils';
-import { formatSecondsToShort, formatMinutesToShort, formatHoursToShort } from '../utils/timerUtils';
-import { computeAttendanceStats } from '../utils/attendanceLogic';
+  getDayNameFromDate,
+  getTodayDateString,
+} from "../utils/dateUtils";
+import {
+  buildSmartDailyPlan,
+  getSmartPlannerSummary,
+} from "../utils/smartPlanner";
+import { formatHoursToShort, formatSecondsToShort } from "../utils/timerUtils";
 
 export function DashboardPage({
   setActivePage,
@@ -72,66 +75,115 @@ export function DashboardPage({
   const todayStr = getTodayDateString();
   const todayDayName = getDayNameFromDate(todayStr);
 
-  const activeLiveStudySeconds = isRunning ? Math.round((liveTimings?.netStudyMs || 0) / 1000) : 0;
+  const activeLiveStudySeconds = isRunning
+    ? Math.round((liveTimings?.netStudyMs || 0) / 1000)
+    : 0;
 
   // 1. Calculate Today's metrics
   const todaySessions = sessions.filter((s) => s.date === todayStr);
-  const todayStudySeconds = todaySessions.reduce((acc, s) => acc + (s.actualStudyDuration || 0), 0);
-  const todayBreakSeconds = todaySessions.reduce((acc, s) => acc + (s.breakDuration || 0), 0);
+  const todayStudySeconds = todaySessions.reduce(
+    (acc, s) => acc + (s.actualStudyDuration || 0),
+    0,
+  );
+  const todayBreakSeconds = todaySessions.reduce(
+    (acc, s) => acc + (s.breakDuration || 0),
+    0,
+  );
   const todayStudyHours = todayStudySeconds / 3600;
 
   // Today's Planned Target Hours
-  const todayPlannedHours = targets.daily?.targetHours || settings?.dailyTargetHours || 4;
+  const todayPlannedHours =
+    targets.daily?.targetHours || settings?.dailyTargetHours || 4;
   const todayRemainingHours = Math.max(0, todayPlannedHours - todayStudyHours);
-  const todayTargetProgress = Math.min(100, Math.round((todayStudyHours / todayPlannedHours) * 100));
+  const todayTargetProgress = Math.min(
+    100,
+    Math.round((todayStudyHours / todayPlannedHours) * 100),
+  );
 
   // 2. Weekly Study Hours
-  const currentWeek = getCurrentWeekDates(settings?.weekStartDay === 'Sunday');
+  const currentWeek = getCurrentWeekDates(settings?.weekStartDay === "Sunday");
   const weekDateSet = new Set(currentWeek.map((w) => w.dateStr));
   const weekSessions = sessions.filter((s) => weekDateSet.has(s.date));
-  const weeklyStudySeconds = weekSessions.reduce((acc, s) => acc + (s.actualStudyDuration || 0), 0);
+  const weeklyStudySeconds = weekSessions.reduce(
+    (acc, s) => acc + (s.actualStudyDuration || 0),
+    0,
+  );
   const weeklyTargetHours = targets.weekly?.targetHours || 25;
   const weeklyStudyHours = weeklyStudySeconds / 3600;
-  const weeklyProgress = Math.min(100, Math.round((weeklyStudyHours / weeklyTargetHours) * 100));
+  const weeklyProgress = Math.min(
+    100,
+    Math.round((weeklyStudyHours / weeklyTargetHours) * 100),
+  );
 
   // 3. Monthly Study Hours
   const currentMonthPrefix = todayStr.slice(0, 7); // '2026-09'
-  const monthlySessions = sessions.filter((s) => s.date && s.date.startsWith(currentMonthPrefix));
-  const monthlyStudySeconds = monthlySessions.reduce((acc, s) => acc + (s.actualStudyDuration || 0), 0);
+  const monthlySessions = sessions.filter(
+    (s) => s.date && s.date.startsWith(currentMonthPrefix),
+  );
+  const monthlyStudySeconds = monthlySessions.reduce(
+    (acc, s) => acc + (s.actualStudyDuration || 0),
+    0,
+  );
   const monthlyTargetHours = targets.monthly?.targetHours || 100;
   const monthlyStudyHours = monthlyStudySeconds / 3600;
-  const monthlyProgress = Math.min(100, Math.round((monthlyStudyHours / monthlyTargetHours) * 100));
+  const monthlyProgress = Math.min(
+    100,
+    Math.round((monthlyStudyHours / monthlyTargetHours) * 100),
+  );
 
   // 4. Total All-time Study Hours
-  const totalStudySeconds = sessions.reduce((acc, s) => acc + (s.actualStudyDuration || 0), 0);
+  const totalStudySeconds = sessions.reduce(
+    (acc, s) => acc + (s.actualStudyDuration || 0),
+    0,
+  );
 
   // 5. Topics Completed & Pending
-  const completedTopics = topics.filter((t) => t.status === 'Completed').length;
-  const pendingTopics = topics.filter((t) => t.status !== 'Completed').length;
+  const completedTopics = topics.filter((t) => t.status === "Completed").length;
+  const pendingTopics = topics.filter((t) => t.status !== "Completed").length;
   const totalTopicsCount = topics.length;
-  const overallProgressPercentage = totalTopicsCount > 0 
-    ? Math.round((completedTopics / totalTopicsCount) * 100) 
-    : 0;
+  const overallProgressPercentage =
+    totalTopicsCount > 0
+      ? Math.round((completedTopics / totalTopicsCount) * 100)
+      : 0;
 
   // 6. Attendance Status
   const todayAttendance = attendance.find((a) => a.date === todayStr);
   const attStats = computeAttendanceStats(attendance);
 
   // 7. Streaks
-  const streaks = calculateStudyStreaks(sessions, settings?.minAttendanceMinutes || 30);
+  const streaks = calculateStudyStreaks(
+    sessions,
+    settings?.minAttendanceMinutes || 30,
+  );
 
   // 8. Today's Timetable Slots
   const todayTimetable = timetable
     .filter((t) => t.day === todayDayName)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
+  const smartPlan = buildSmartDailyPlan({
+    today: todayStr,
+    todayDayName,
+    topics,
+    subjects,
+    timetable,
+    targets: targets.tomorrow || [],
+    sessions,
+    settings,
+  });
+  const smartPlannerSummary = getSmartPlannerSummary(smartPlan, settings);
+
   // 9. Current Primary Goal
-  const primaryGoal = goals.find((g) => g.status !== 'Completed') || goals[0] || null;
+  const primaryGoal =
+    goals.find((g) => g.status !== "Completed") || goals[0] || null;
 
   // 10. Daily trend data for bar chart
   const last7DaysData = currentWeek.map((w) => {
     const daySessions = sessions.filter((s) => s.date === w.dateStr);
-    const sec = daySessions.reduce((acc, s) => acc + (s.actualStudyDuration || 0), 0);
+    const sec = daySessions.reduce(
+      (acc, s) => acc + (s.actualStudyDuration || 0),
+      0,
+    );
     return {
       label: w.dayName.slice(0, 3),
       valueHours: sec / 3600,
@@ -142,56 +194,64 @@ export function DashboardPage({
   return (
     <div className="space-y-6 pb-12">
       {/* Top Welcome Banner & Quick Action Buttons */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-card p-6 border-slate-200 dark:border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+      <div className="relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6 rounded-3xl p-6 lg:p-8 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-black/50">
+        {/* Subtle Background Gradients */}
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-500/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70 animate-blob"></div>
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/20 backdrop-blur-md">
               {todayDayName}, {formatFriendlyDate(todayStr)}
             </span>
-            <span className="text-xs text-slate-400">•</span>
-            <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
+            <span className="text-xs text-slate-300 dark:text-slate-600">•</span>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 backdrop-blur-md">
               <Flame size={14} className="fill-amber-500" />
               <span>{streaks.currentStreak} Day Streak</span>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1.5 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-brand-900 to-slate-900 dark:from-white dark:via-brand-100 dark:to-white mt-3 tracking-tight">
             Study Management Dashboard
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2">
+            <Sparkles size={14} className="text-brand-500" />
             "Plan → Study → Track → Take Break → Record → Analyze → Improve"
           </p>
         </div>
 
         {/* Quick Actions Row */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="relative z-10 flex flex-wrap items-center gap-3">
           <button
             onClick={() => {
-              setActivePage('timer');
+              setActivePage("timer");
             }}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-brand-500/20 transition transform active:scale-95"
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-bold flex items-center gap-2 shadow-lg shadow-brand-500/30 transition-all transform hover:scale-105 active:scale-95"
           >
-            <Play size={14} className="fill-white" />
+            <Play size={16} className="fill-white" />
             <span>Start Study</span>
           </button>
+          
           <button
             onClick={onOpenNewSubject}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition"
+            className="px-4 py-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm font-bold flex items-center gap-2 backdrop-blur-md transition-all transform hover:scale-105 active:scale-95 shadow-sm"
           >
-            <Plus size={14} />
+            <Plus size={16} />
             <span>Subject</span>
           </button>
+          
           <button
             onClick={onOpenNewTopic}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition"
+            className="px-4 py-3 rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/10 hover:from-rose-500/20 hover:to-pink-500/20 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm font-bold flex items-center gap-2 backdrop-blur-md transition-all transform hover:scale-105 active:scale-95 shadow-sm"
           >
-            <Plus size={14} />
+            <Plus size={16} />
             <span>Topic</span>
           </button>
+          
           <button
             onClick={onOpenSchedule}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition"
+            className="px-4 py-3 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-sm font-bold flex items-center gap-2 backdrop-blur-md transition-all transform hover:scale-105 active:scale-95 shadow-sm"
           >
-            <Plus size={14} />
+            <Plus size={16} />
             <span>Schedule</span>
           </button>
         </div>
@@ -211,14 +271,20 @@ export function DashboardPage({
                 </span>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                   {topics.find((t) => t.id === activeSession.topicId)?.name ||
-                   subjects.find((s) => s.id === activeSession.subjectId)?.name ||
-                   preparations.find((p) => p.id === activeSession.preparationId)?.name ||
-                   'Study Session'}
+                    subjects.find((s) => s.id === activeSession.subjectId)
+                      ?.name ||
+                    preparations.find(
+                      (p) => p.id === activeSession.preparationId,
+                    )?.name ||
+                    "Study Session"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {subjects.find((s) => s.id === activeSession.subjectId)?.name ||
-                   preparations.find((p) => p.id === activeSession.preparationId)?.name ||
-                   'General Study'}
+                  {subjects.find((s) => s.id === activeSession.subjectId)
+                    ?.name ||
+                    preparations.find(
+                      (p) => p.id === activeSession.preparationId,
+                    )?.name ||
+                    "General Study"}
                 </p>
               </div>
             </div>
@@ -228,10 +294,12 @@ export function DashboardPage({
                 <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mono-number block">
                   {formattedNetStudyTime}
                 </span>
-                <span className="text-[11px] text-slate-400 block">Net Study Time</span>
+                <span className="text-[11px] text-slate-400 block">
+                  Net Study Time
+                </span>
               </div>
               <button
-                onClick={() => setActivePage('timer')}
+                onClick={() => setActivePage("timer")}
                 className="px-4 py-2 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white transition flex items-center gap-1"
               >
                 <span>Controls</span>
@@ -247,17 +315,30 @@ export function DashboardPage({
         {/* 1. Total Study Time */}
         <StatCard
           title="Total Study Time"
-          value={formatSecondsToShort(totalStudySeconds + activeLiveStudySeconds)}
-          subtitle={isRunning ? '● Study session actively recording' : 'All recorded study sessions'}
+          value={formatSecondsToShort(
+            totalStudySeconds + activeLiveStudySeconds,
+          )}
+          subtitle={
+            isRunning
+              ? "● Study session actively recording"
+              : "All recorded study sessions"
+          }
           icon={Timer}
           accentColor="brand"
           isLive={isRunning}
           liveBadgeText="LIVE"
-          onClick={() => setActivePage('history')}
+          onClick={() => setActivePage("history")}
         >
           <div className="space-y-1.5">
             <ProgressBar
-              value={Math.min(100, Math.round(((totalStudySeconds + activeLiveStudySeconds) / (targets.monthly?.targetHours * 3600 || 360000)) * 100))}
+              value={Math.min(
+                100,
+                Math.round(
+                  ((totalStudySeconds + activeLiveStudySeconds) /
+                    (targets.monthly?.targetHours * 3600 || 360000)) *
+                    100,
+                ),
+              )}
               max={100}
               showLabel={false}
               height="h-2.5"
@@ -274,7 +355,9 @@ export function DashboardPage({
                   <span className="w-1 bg-brand-500 rounded-full wave-bar-4" />
                   <span className="ml-1 tracking-wider">LIVE TICKER</span>
                 </div>
-                <span className="mono-number font-extrabold">{formattedNetStudyTime}</span>
+                <span className="mono-number font-extrabold">
+                  {formattedNetStudyTime}
+                </span>
               </div>
             )}
           </div>
@@ -283,13 +366,19 @@ export function DashboardPage({
         {/* 2. Today's Study Time */}
         <StatCard
           title="Today's Study Time"
-          value={formatSecondsToShort(todayStudySeconds + activeLiveStudySeconds)}
-          subtitle={isRunning ? '● Real-time study accumulating' : `Target: ${todayPlannedHours}h (${todayTargetProgress}%)`}
+          value={formatSecondsToShort(
+            todayStudySeconds + activeLiveStudySeconds,
+          )}
+          subtitle={
+            isRunning
+              ? "● Real-time study accumulating"
+              : `Target: ${todayPlannedHours}h (${todayTargetProgress}%)`
+          }
           icon={Clock}
           accentColor="emerald"
           isLive={isRunning}
           liveBadgeText="TRACKING"
-          onClick={() => setActivePage('timer')}
+          onClick={() => setActivePage("timer")}
         >
           <div className="space-y-1.5">
             <ProgressBar
@@ -304,7 +393,16 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               <span>Goal: {todayPlannedHours}h</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400 mono-number">
-                {Math.min(100, Math.round(((todayStudySeconds + activeLiveStudySeconds) / 3600 / todayPlannedHours) * 100))}%
+                {Math.min(
+                  100,
+                  Math.round(
+                    ((todayStudySeconds + activeLiveStudySeconds) /
+                      3600 /
+                      todayPlannedHours) *
+                      100,
+                  ),
+                )}
+                %
               </span>
             </div>
           </div>
@@ -313,13 +411,15 @@ export function DashboardPage({
         {/* 3. Weekly Study Time */}
         <StatCard
           title="Weekly Study Time"
-          value={formatSecondsToShort(weeklyStudySeconds + activeLiveStudySeconds)}
+          value={formatSecondsToShort(
+            weeklyStudySeconds + activeLiveStudySeconds,
+          )}
           subtitle={`Target: ${weeklyTargetHours}h (${weeklyProgress}%)`}
           icon={Calendar}
           accentColor="sky"
           isLive={isRunning}
           liveBadgeText="LIVE"
-          onClick={() => setActivePage('targets')}
+          onClick={() => setActivePage("targets")}
         >
           <div className="space-y-1.5">
             <ProgressBar
@@ -334,7 +434,16 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               <span>Weekly Goal: {weeklyTargetHours}h</span>
               <span className="font-bold text-sky-600 dark:text-sky-400 mono-number">
-                {Math.min(100, Math.round(((weeklyStudySeconds + activeLiveStudySeconds) / 3600 / weeklyTargetHours) * 100))}%
+                {Math.min(
+                  100,
+                  Math.round(
+                    ((weeklyStudySeconds + activeLiveStudySeconds) /
+                      3600 /
+                      weeklyTargetHours) *
+                      100,
+                  ),
+                )}
+                %
               </span>
             </div>
           </div>
@@ -349,7 +458,7 @@ export function DashboardPage({
           accentColor="violet"
           isLive={isRunning}
           liveBadgeText="LIVE"
-          onClick={() => setActivePage('analytics')}
+          onClick={() => setActivePage("analytics")}
         >
           <div className="space-y-1.5">
             <ProgressBar
@@ -364,7 +473,16 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               <span>Monthly Target: {monthlyTargetHours}h</span>
               <span className="font-bold text-violet-600 dark:text-violet-400 mono-number">
-                {Math.min(100, Math.round(((monthlyStudySeconds + activeLiveStudySeconds) / 3600 / monthlyTargetHours) * 100))}%
+                {Math.min(
+                  100,
+                  Math.round(
+                    ((monthlyStudySeconds + activeLiveStudySeconds) /
+                      3600 /
+                      monthlyTargetHours) *
+                      100,
+                  ),
+                )}
+                %
               </span>
             </div>
           </div>
@@ -374,20 +492,32 @@ export function DashboardPage({
         <StatCard
           title="Today's Attendance"
           value={
-            todayStudySeconds + activeLiveStudySeconds >= (settings?.minAttendanceMinutes || 30) * 60
-              ? 'PRESENT'
-              : todayAttendance?.status || (todayStudySeconds + activeLiveStudySeconds > 0 ? 'PARTIAL' : 'ABSENT')
+            todayStudySeconds + activeLiveStudySeconds >=
+            (settings?.minAttendanceMinutes || 30) * 60
+              ? "PRESENT"
+              : todayAttendance?.status ||
+                (todayStudySeconds + activeLiveStudySeconds > 0
+                  ? "PARTIAL"
+                  : "ABSENT")
           }
           subtitle={`Required: ${settings?.minAttendanceMinutes || 30}m (${Math.round((todayStudySeconds + activeLiveStudySeconds) / 60)}m logged)`}
           icon={UserCheck}
           accentColor="amber"
           isLive={isRunning}
-          liveBadgeText={todayStudySeconds + activeLiveStudySeconds >= (settings?.minAttendanceMinutes || 30) * 60 ? 'PRESENT' : 'LOGGING'}
-          onClick={() => setActivePage('attendance')}
+          liveBadgeText={
+            todayStudySeconds + activeLiveStudySeconds >=
+            (settings?.minAttendanceMinutes || 30) * 60
+              ? "PRESENT"
+              : "LOGGING"
+          }
+          onClick={() => setActivePage("attendance")}
         >
           <div className="space-y-1.5">
             <ProgressBar
-              value={Math.min(todayStudySeconds + activeLiveStudySeconds, (settings?.minAttendanceMinutes || 30) * 60)}
+              value={Math.min(
+                todayStudySeconds + activeLiveStudySeconds,
+                (settings?.minAttendanceMinutes || 30) * 60,
+              )}
               max={(settings?.minAttendanceMinutes || 30) * 60}
               showLabel={false}
               height="h-2.5"
@@ -398,7 +528,15 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               <span>Threshold: {settings?.minAttendanceMinutes || 30}m</span>
               <span className="font-bold text-amber-600 dark:text-amber-400 mono-number">
-                {Math.min(100, Math.round(((todayStudySeconds + activeLiveStudySeconds) / ((settings?.minAttendanceMinutes || 30) * 60)) * 100))}%
+                {Math.min(
+                  100,
+                  Math.round(
+                    ((todayStudySeconds + activeLiveStudySeconds) /
+                      ((settings?.minAttendanceMinutes || 30) * 60)) *
+                      100,
+                  ),
+                )}
+                %
               </span>
             </div>
           </div>
@@ -411,7 +549,7 @@ export function DashboardPage({
           subtitle={`${overallProgressPercentage}% completed`}
           icon={CheckCircle2}
           accentColor="emerald"
-          onClick={() => setActivePage('topics')}
+          onClick={() => setActivePage("topics")}
         >
           <div className="space-y-1.5">
             <ProgressBar
@@ -438,7 +576,7 @@ export function DashboardPage({
           subtitle="Remaining syllabus"
           icon={ListTodo}
           accentColor="rose"
-          onClick={() => setActivePage('topics')}
+          onClick={() => setActivePage("topics")}
         >
           <div className="space-y-1.5">
             <ProgressBar
@@ -452,7 +590,10 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               <span>Pending</span>
               <span className="font-bold text-rose-600 dark:text-rose-400 mono-number">
-                {totalTopicsCount > 0 ? Math.round((pendingTopics / totalTopicsCount) * 100) : 0}%
+                {totalTopicsCount > 0
+                  ? Math.round((pendingTopics / totalTopicsCount) * 100)
+                  : 0}
+                %
               </span>
             </div>
           </div>
@@ -461,11 +602,11 @@ export function DashboardPage({
         {/* 8. Current Goal */}
         <StatCard
           title="Current Goal"
-          value={primaryGoal ? `${primaryGoal.progress}%` : 'Set Goal'}
-          subtitle={primaryGoal ? primaryGoal.name : 'Click to add target'}
+          value={primaryGoal ? `${primaryGoal.progress}%` : "Set Goal"}
+          subtitle={primaryGoal ? primaryGoal.name : "Click to add target"}
           icon={Trophy}
           accentColor="brand"
-          onClick={() => setActivePage('goals')}
+          onClick={() => setActivePage("goals")}
         >
           <div className="space-y-1.5">
             <ProgressBar
@@ -477,14 +618,19 @@ export function DashboardPage({
               isAnimated={true}
             />
             <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
-              <span className="truncate">{primaryGoal ? primaryGoal.targetDate || 'In Progress' : 'No Goal'}</span>
+              <span className="truncate">
+                {primaryGoal
+                  ? primaryGoal.targetDate || "In Progress"
+                  : "No Goal"}
+              </span>
               <span className="font-bold text-brand-600 dark:text-brand-400 mono-number">
-                {primaryGoal ? `${primaryGoal.progress}%` : '0%'}
+                {primaryGoal ? `${primaryGoal.progress}%` : "0%"}
               </span>
             </div>
           </div>
         </StatCard>
       </div>
+
 
       {/* Main Grid: Today's Overview & Weekly Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -496,34 +642,43 @@ export function DashboardPage({
                 Today's Study Progress & Schedule
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Planned vs actual study performance for {formatFriendlyDate(todayStr)}
+                Planned vs actual study performance for{" "}
+                {formatFriendlyDate(todayStr)}
               </p>
             </div>
-            <StatusBadge status={todayAttendance?.status || 'PENDING'} />
+            <StatusBadge status={todayAttendance?.status || "PENDING"} />
           </div>
 
           {/* Planned vs Completed Breakdown */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-center">
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-950/60">
-              <span className="text-[11px] text-slate-400 block font-medium">Planned Hours</span>
+              <span className="text-[11px] text-slate-400 block font-medium">
+                Planned Hours
+              </span>
               <span className="text-base font-bold text-slate-800 dark:text-slate-200 mono-number mt-0.5 block">
                 {todayPlannedHours}h
               </span>
             </div>
             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40">
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block font-medium">Completed</span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block font-medium">
+                Completed
+              </span>
               <span className="text-base font-bold text-emerald-700 dark:text-emerald-300 mono-number mt-0.5 block">
                 {formatSecondsToShort(todayStudySeconds)}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-950/60">
-              <span className="text-[11px] text-slate-400 block font-medium">Remaining</span>
+              <span className="text-[11px] text-slate-400 block font-medium">
+                Remaining
+              </span>
               <span className="text-base font-bold text-slate-800 dark:text-slate-200 mono-number mt-0.5 block">
                 {formatHoursToShort(todayRemainingHours)}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40">
-              <span className="text-[11px] text-amber-600 dark:text-amber-400 block font-medium">Break Time</span>
+              <span className="text-[11px] text-amber-600 dark:text-amber-400 block font-medium">
+                Break Time
+              </span>
               <span className="text-base font-bold text-amber-700 dark:text-amber-300 mono-number mt-0.5 block">
                 {formatSecondsToShort(todayBreakSeconds)}
               </span>
@@ -548,7 +703,7 @@ export function DashboardPage({
                 Today's Timetable ({todayDayName})
               </span>
               <button
-                onClick={() => setActivePage('timetable')}
+                onClick={() => setActivePage("timetable")}
                 className="text-xs text-brand-600 dark:text-brand-400 hover:underline font-semibold"
               >
                 View Full Timetable →
@@ -557,14 +712,17 @@ export function DashboardPage({
 
             {todayTimetable.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-dark-950/50 rounded-xl">
-                No slots scheduled for today. Click "+ Schedule" above to add time blocks.
+                No slots scheduled for today. Click "+ Schedule" above to add
+                time blocks.
               </div>
             ) : (
               <div className="space-y-2">
                 {todayTimetable.map((slot) => {
                   const sub = subjects.find((s) => s.id === slot.subjectId);
                   const top = topics.find((t) => t.id === slot.topicId);
-                  const prep = preparations.find((p) => p.id === slot.preparationId);
+                  const prep = preparations.find(
+                    (p) => p.id === slot.preparationId,
+                  );
 
                   return (
                     <div
@@ -578,12 +736,15 @@ export function DashboardPage({
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sm text-slate-900 dark:text-white">
-                              {sub?.name || prep?.name || 'General Study'}
+                              {sub?.name || prep?.name || "General Study"}
                             </span>
                             <PriorityBadge priority={slot.priority} />
                           </div>
                           <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {top?.name || (sub?.name ? 'General Subject Study' : 'General Study Session')}
+                            {top?.name ||
+                              (sub?.name
+                                ? "General Subject Study"
+                                : "General Study Session")}
                           </span>
                         </div>
                       </div>
@@ -595,7 +756,7 @@ export function DashboardPage({
                             topicId: slot.topicId,
                             targetDurationMinutes: slot.targetDuration,
                           });
-                          setActivePage('timer');
+                          setActivePage("timer");
                         }}
                         className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition"
                       >
@@ -632,7 +793,9 @@ export function DashboardPage({
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Tomorrow's Target
                 </h3>
-                <p className="text-[11px] text-slate-400">Planned next-day sprint</p>
+                <p className="text-[11px] text-slate-400">
+                  Planned next-day sprint
+                </p>
               </div>
               <button
                 onClick={onOpenTomorrowTarget}
@@ -642,9 +805,9 @@ export function DashboardPage({
               </button>
             </div>
 
-            {(!targets.tomorrow || targets.tomorrow.length === 0) ? (
+            {!targets.tomorrow || targets.tomorrow.length === 0 ? (
               <div className="py-4 text-center text-xs text-slate-400">
-                No targets set for tomorrow yet.{' '}
+                No targets set for tomorrow yet.{" "}
                 <button
                   onClick={onOpenTomorrowTarget}
                   className="text-brand-600 dark:text-brand-400 underline font-medium"
@@ -657,7 +820,9 @@ export function DashboardPage({
                 {targets.tomorrow.map((tar) => {
                   const sub = subjects.find((s) => s.id === tar.subjectId);
                   const top = topics.find((t) => t.id === tar.topicId);
-                  const prep = preparations.find((p) => p.id === tar.preparationId);
+                  const prep = preparations.find(
+                    (p) => p.id === tar.preparationId,
+                  );
                   return (
                     <div
                       key={tar.id}
@@ -665,10 +830,14 @@ export function DashboardPage({
                     >
                       <div>
                         <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                          {sub?.name || prep?.name || 'General Target'}
+                          {sub?.name || prep?.name || "General Target"}
                         </span>
                         <span className="text-slate-500 dark:text-slate-400">
-                          {top?.name || (sub?.name ? 'General Subject Study' : 'General Study Session')} • {tar.targetDurationMinutes} mins
+                          {top?.name ||
+                            (sub?.name
+                              ? "General Subject Study"
+                              : "General Study Session")}{" "}
+                          • {tar.targetDurationMinutes} mins
                         </span>
                       </div>
                       <PriorityBadge priority={tar.priority} />
@@ -693,7 +862,7 @@ export function DashboardPage({
             </p>
           </div>
           <button
-            onClick={() => setActivePage('subjects')}
+            onClick={() => setActivePage("subjects")}
             className="text-xs text-brand-600 dark:text-brand-400 hover:underline font-semibold"
           >
             Manage Subjects →

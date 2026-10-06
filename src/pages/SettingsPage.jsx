@@ -1,31 +1,36 @@
-import React, { useState } from 'react';
 import {
-  Settings as SettingsIcon,
+  Database,
   Moon,
-  Sun,
-  Volume2,
-  VolumeX,
-  Bell,
-  Clock,
-  Save,
-  Check,
-  Trash2,
-  Sparkles,
+  RefreshCw,
   RotateCcw,
-  AlertTriangle,
-} from 'lucide-react';
-import { useStudy } from '../context/StudyContext';
-import { useTheme } from '../context/ThemeContext';
-import { useTimer } from '../context/TimerContext';
-import { ConfirmDialog } from '../components/common/ConfirmDialog';
+  Save,
+  Settings as SettingsIcon,
+  Sparkles,
+  Sun,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import { ConfirmDialog } from "../components/common/ConfirmDialog";
+import { useStudy } from "../context/StudyContext";
+import { useTheme } from "../context/ThemeContext";
+import { useTimer } from "../context/TimerContext";
 
 export function SettingsPage() {
-  const { settings, updateSettings, clearAllData, resetToSampleData, addToast } = useStudy();
+  const {
+    settings,
+    updateSettings,
+    clearAllData,
+    resetToSampleData,
+    addToast,
+    syncStatus,
+    syncNow,
+  } = useStudy();
   const { theme, toggleTheme } = useTheme();
   const { resetTimer } = useTimer();
 
   const [isClearDataConfirmOpen, setIsClearDataConfirmOpen] = useState(false);
-  const [isResetSampleConfirmOpen, setIsResetSampleConfirmOpen] = useState(false);
+  const [isResetSampleConfirmOpen, setIsResetSampleConfirmOpen] =
+    useState(false);
 
   const [form, setForm] = useState({
     dailyTargetHours: settings?.dailyTargetHours || 4,
@@ -36,9 +41,12 @@ export function SettingsPage() {
     pomodoroLongBreak: settings?.pomodoro?.longBreakMinutes || 15,
     pomodoroCycles: settings?.pomodoro?.cyclesBeforeLongBreak || 4,
     soundEnabled: settings?.soundEnabled ?? true,
-    timeFormat: settings?.timeFormat || '12h',
-    weekStartDay: settings?.weekStartDay || 'Monday',
+    timeFormat: settings?.timeFormat || "12h",
+    weekStartDay: settings?.weekStartDay || "Monday",
     browserNotifications: settings?.browserNotifications || false,
+    googleSheetsSyncEnabled: settings?.googleSheetsSyncEnabled || false,
+    googleSheetsSyncUrl: settings?.googleSheetsSyncUrl || "",
+    googleSheetsSyncKey: settings?.googleSheetsSyncKey || "",
   });
 
   const handleSave = (e) => {
@@ -57,8 +65,19 @@ export function SettingsPage() {
       timeFormat: form.timeFormat,
       weekStartDay: form.weekStartDay,
       browserNotifications: form.browserNotifications,
+      googleSheetsSyncEnabled: form.googleSheetsSyncEnabled,
+      googleSheetsSyncUrl: form.googleSheetsSyncUrl.trim(),
+      googleSheetsSyncKey: form.googleSheetsSyncKey.trim(),
     });
-    addToast('Preferences and settings saved!', 'success');
+    addToast("Preferences and settings saved!", "success");
+  };
+
+  const handleSyncNow = async () => {
+    try {
+      await syncNow();
+    } catch (error) {
+      // Error is already displayed to the user.
+    }
   };
 
   return (
@@ -73,7 +92,8 @@ export function SettingsPage() {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Customize timer parameters, attendance rules, themes, audio chimes, and week formats.
+            Customize timer parameters, attendance rules, themes, audio chimes,
+            Google Sheets sync, and week formats.
           </p>
         </div>
 
@@ -104,7 +124,9 @@ export function SettingsPage() {
                 min="0.5"
                 max="24"
                 value={form.dailyTargetHours}
-                onChange={(e) => setForm({ ...form, dailyTargetHours: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, dailyTargetHours: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-1 block">
@@ -122,7 +144,9 @@ export function SettingsPage() {
                 max="180"
                 step="5"
                 value={form.minAttendanceMinutes}
-                onChange={(e) => setForm({ ...form, minAttendanceMinutes: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, minAttendanceMinutes: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-1 block">
@@ -140,12 +164,110 @@ export function SettingsPage() {
                 max="240"
                 step="15"
                 value={form.defaultSessionMinutes}
-                onChange={(e) => setForm({ ...form, defaultSessionMinutes: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, defaultSessionMinutes: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
               <span className="text-[11px] text-slate-400 mt-1 block">
                 Preset time for new timer sessions
               </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Sheets Sync */}
+        <div className="glass-card p-6 space-y-4">
+          <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <Database className="text-emerald-500" size={18} />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Live Google Sheets Sync
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Save the complete study workspace to your linked sheet.
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.googleSheetsSyncEnabled}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    googleSheetsSyncEnabled: e.target.checked,
+                  })
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
+            </label>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Apps Script Web App URL
+              </label>
+              <input
+                type="url"
+                value={form.googleSheetsSyncUrl}
+                onChange={(e) =>
+                  setForm({ ...form, googleSheetsSyncUrl: e.target.value })
+                }
+                placeholder="https://script.google.com/macros/s/.../exec"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Create this endpoint from the Apps Script included with the
+                project.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Optional Sync Key
+              </label>
+              <input
+                type="password"
+                value={form.googleSheetsSyncKey}
+                onChange={(e) =>
+                  setForm({ ...form, googleSheetsSyncKey: e.target.value })
+                }
+                placeholder="Only needed if enabled in Apps Script"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950/60 p-3">
+              <div>
+                <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                  Sync status
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {syncStatus.isSyncing
+                    ? "Syncing…"
+                    : syncStatus.lastSyncedAt
+                      ? `Last synced: ${new Date(syncStatus.lastSyncedAt).toLocaleString()}`
+                      : syncStatus.error
+                        ? `Last error: ${syncStatus.error}`
+                        : "Not synced yet"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSyncNow}
+                disabled={syncStatus.isSyncing}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                <RefreshCw
+                  size={14}
+                  className={syncStatus.isSyncing ? "animate-spin" : ""}
+                />
+                <span>{syncStatus.isSyncing ? "Syncing" : "Sync now"}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -166,7 +288,9 @@ export function SettingsPage() {
                 min="5"
                 max="90"
                 value={form.pomodoroStudyMinutes}
-                onChange={(e) => setForm({ ...form, pomodoroStudyMinutes: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, pomodoroStudyMinutes: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
             </div>
@@ -180,7 +304,9 @@ export function SettingsPage() {
                 min="1"
                 max="30"
                 value={form.pomodoroShortBreak}
-                onChange={(e) => setForm({ ...form, pomodoroShortBreak: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, pomodoroShortBreak: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
             </div>
@@ -194,7 +320,9 @@ export function SettingsPage() {
                 min="5"
                 max="60"
                 value={form.pomodoroLongBreak}
-                onChange={(e) => setForm({ ...form, pomodoroLongBreak: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, pomodoroLongBreak: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
             </div>
@@ -208,7 +336,9 @@ export function SettingsPage() {
                 min="1"
                 max="10"
                 value={form.pomodoroCycles}
-                onChange={(e) => setForm({ ...form, pomodoroCycles: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, pomodoroCycles: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               />
             </div>
@@ -231,8 +361,8 @@ export function SettingsPage() {
                 onClick={toggleTheme}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm font-semibold flex items-center justify-between transition"
               >
-                <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
-                {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+                <span>{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
+                {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
               </button>
             </div>
 
@@ -242,7 +372,9 @@ export function SettingsPage() {
               </label>
               <select
                 value={form.timeFormat}
-                onChange={(e) => setForm({ ...form, timeFormat: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, timeFormat: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               >
                 <option value="12h">12-Hour (07:30 PM)</option>
@@ -256,7 +388,9 @@ export function SettingsPage() {
               </label>
               <select
                 value={form.weekStartDay}
-                onChange={(e) => setForm({ ...form, weekStartDay: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, weekStartDay: e.target.value })
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white outline-none"
               >
                 <option value="Monday">Monday</option>
@@ -272,14 +406,17 @@ export function SettingsPage() {
                 Timer Audio Synthesizer
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                Play pleasant chimes on timer start, pause, break, and completion
+                Play pleasant chimes on timer start, pause, break, and
+                completion
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.soundEnabled}
-                onChange={(e) => setForm({ ...form, soundEnabled: e.target.checked })}
+                onChange={(e) =>
+                  setForm({ ...form, soundEnabled: e.target.checked })
+                }
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600" />
@@ -302,7 +439,8 @@ export function SettingsPage() {
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Manage your stored study records. You can start completely fresh with clean zeroed data or restore sample demo plans.
+            Manage your stored study records. You can start completely fresh
+            with clean zeroed data or restore sample demo plans.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
@@ -314,7 +452,9 @@ export function SettingsPage() {
                   <h4>Clear All Data (Fresh Start)</h4>
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
-                  Clears all sample preparations, subjects, topics, past sessions, and attendance. Gives you a 100% clean, fresh workspace with 0 hours, ready for your own custom syllabus.
+                  Clears all sample preparations, subjects, topics, past
+                  sessions, and attendance. Gives you a 100% clean, fresh
+                  workspace with 0 hours, ready for your own custom syllabus.
                 </p>
               </div>
               <button
@@ -335,7 +475,9 @@ export function SettingsPage() {
                   <h4>Restore Demo Sample Data</h4>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                  Re-populates the workspace with rich pre-configured demo plans (MERN Stack, Govt Exam, syllabus topics, and sample study logs).
+                  Re-populates the workspace with rich pre-configured demo plans
+                  (MERN Stack, Govt Exam, syllabus topics, and sample study
+                  logs).
                 </p>
               </div>
               <button

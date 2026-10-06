@@ -122,10 +122,17 @@ export function PreparationsPage({ setActivePage }) {
           return (
             <div
               key={prep.id}
-              className={`glass-card p-6 flex flex-col justify-between relative transition-all duration-200 ${
+              onClick={() => {
+                if (!isActive) {
+                  setActivePrepId(prep.id);
+                } else {
+                  setActivePage('subjects');
+                }
+              }}
+              className={`group p-6 flex flex-col justify-between relative transition-all duration-300 rounded-[2rem] cursor-pointer overflow-hidden backdrop-blur-xl border ${
                 isActive
-                  ? 'ring-2 ring-brand-500 shadow-md'
-                  : 'hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'bg-brand-50/50 dark:bg-brand-900/20 border-brand-500 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-2 ring-brand-500/20'
+                  : 'bg-white/40 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:shadow-xl hover:-translate-y-1 hover:border-brand-500/30'
               }`}
             >
               <div>
@@ -170,7 +177,7 @@ export function PreparationsPage({ setActivePage }) {
                 </div>
 
                 {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2 mt-5 p-3 rounded-xl bg-slate-50 dark:bg-dark-950/60 text-center text-xs">
+                <div className="grid grid-cols-3 gap-2 mt-5 p-3 rounded-2xl bg-white/50 dark:bg-dark-950/40 backdrop-blur-sm border border-white/20 dark:border-white/5 text-center text-xs">
                   <div>
                     <span className="text-[10px] text-slate-400 block">Subjects</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200 mono-number">
@@ -208,15 +215,21 @@ export function PreparationsPage({ setActivePage }) {
               <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                 {!isActive ? (
                   <button
-                    onClick={() => setActivePrepId(prep.id)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePrepId(prep.id);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-white/60 hover:bg-white dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 backdrop-blur-md transition border border-slate-200/50 dark:border-slate-700/50"
                   >
                     Switch to This
                   </button>
                 ) : (
                   <button
-                    onClick={() => setActivePage('subjects')}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-50 hover:bg-brand-100 dark:bg-brand-950 dark:hover:bg-brand-900 text-brand-600 dark:text-brand-300 flex items-center gap-1 transition"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePage('subjects');
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-brand-50/80 hover:bg-brand-100 dark:bg-brand-900/40 dark:hover:bg-brand-900/60 text-brand-700 dark:text-brand-300 flex items-center gap-1 backdrop-blur-md transition border border-brand-200/50 dark:border-brand-800/50"
                   >
                     <span>View Subjects</span>
                     <ChevronRight size={14} />
@@ -225,18 +238,22 @@ export function PreparationsPage({ setActivePage }) {
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setEditingPrep(prep);
                       setIsModalOpen(true);
                     }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800/60 backdrop-blur-sm transition border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700/50"
                     title="Edit Preparation"
                   >
                     <Edit2 size={15} />
                   </button>
                   <button
-                    onClick={() => setDeleteTargetId(prep.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTargetId(prep.id);
+                    }}
+                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 backdrop-blur-sm transition border border-transparent hover:border-rose-200/50 dark:hover:border-rose-900/50"
                     title="Delete Preparation"
                   >
                     <Trash2 size={15} />

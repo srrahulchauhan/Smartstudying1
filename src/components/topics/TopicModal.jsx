@@ -11,7 +11,7 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
     description: '',
     priority: 'High',
     targetDate: '',
-    estimatedStudyTime: 90, // minutes
+    estimatedStudyTimeHours: '1.5',
     status: defaultStatus,
     videoLinks: '',
   });
@@ -22,6 +22,7 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
     if (initialData) {
       setFormData({
         ...initialData,
+        estimatedStudyTimeHours: initialData.estimatedStudyTime ? String(initialData.estimatedStudyTime / 60) : '',
         videoLinks: Array.isArray(initialData.videoLinks) ? initialData.videoLinks.join('\n') : (initialData.videoLinks || ''),
       });
     } else {
@@ -31,7 +32,7 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
         description: '',
         priority: 'High',
         targetDate: '',
-        estimatedStudyTime: 90,
+        estimatedStudyTimeHours: '1.5',
         status: defaultStatus,
         videoLinks: '',
       });
@@ -42,7 +43,7 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
   const validate = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = 'Topic Name is required';
-    if (Number(formData.estimatedStudyTime) <= 0) errs.estimatedStudyTime = 'Estimated study time must be > 0';
+    if (Number(formData.estimatedStudyTimeHours) <= 0) errs.estimatedStudyTimeHours = 'Estimated study time must be > 0';
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -70,8 +71,10 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
       }
     }
 
+    const { estimatedStudyTimeHours, ...restData } = formData;
     const payload = {
-      ...formData,
+      ...restData,
+      estimatedStudyTime: Math.round(Number(estimatedStudyTimeHours) * 60) || 0,
       subjectId: subId,
       videoLinks: formData.videoLinks
         ? formData.videoLinks.split('\n').map(l => l.trim()).filter(l => l)
@@ -213,13 +216,13 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
             </label>
             <input
               type="number"
-              step="0.5"
-              min="0.25"
-              value={formData.estimatedStudyTime ? formData.estimatedStudyTime / 60 : ''}
-              onChange={(e) => setFormData({ ...formData, estimatedStudyTime: parseFloat(e.target.value) * 60 || 0 })}
+              step="any"
+              min="0"
+              value={formData.estimatedStudyTimeHours}
+              onChange={(e) => setFormData({ ...formData, estimatedStudyTimeHours: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none"
             />
-            {errors.estimatedStudyTime && <p className="text-xs text-rose-500 mt-1">{errors.estimatedStudyTime}</p>}
+            {errors.estimatedStudyTimeHours && <p className="text-xs text-rose-500 mt-1">{errors.estimatedStudyTimeHours}</p>}
           </div>
         </div>
 

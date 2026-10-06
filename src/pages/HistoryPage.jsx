@@ -29,7 +29,7 @@ export function HistoryPage() {
   const [expandedSessionId, setExpandedSessionId] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
-  const [editMinutes, setEditMinutes] = useState(0);
+  const [editHours, setEditHours] = useState(0);
 
   // Filtered & sorted sessions
   const filteredSessions = sessions
@@ -272,7 +272,7 @@ export function HistoryPage() {
                       <button
                         onClick={() => {
                           setEditingSession(sess);
-                          setEditMinutes(Math.round((sess.actualStudyDuration || 0) / 60));
+                          setEditHours(Number(((sess.actualStudyDuration || 0) / 3600).toFixed(2)));
                         }}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition"
                         title="Edit Session"
@@ -351,13 +351,14 @@ export function HistoryPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-              Actual Study Time (Minutes)
+              Actual Study Time (Hours)
             </label>
             <input
               type="number"
               min="0"
-              value={editMinutes}
-              onChange={(e) => setEditMinutes(parseInt(e.target.value) || 0)}
+              step="any"
+              value={editHours}
+              onChange={(e) => setEditHours(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-dark-950 text-sm text-slate-900 dark:text-white focus:border-brand-500 outline-none"
             />
           </div>
@@ -372,9 +373,11 @@ export function HistoryPage() {
             <button
               onClick={() => {
                 if (editingSession) {
+                  const hoursParsed = parseFloat(editHours) || 0;
+                  const newActualDuration = Math.round(hoursParsed * 3600);
                   updateSession(editingSession.id, {
-                    actualStudyDuration: editMinutes * 60,
-                    totalDuration: editMinutes * 60 + (editingSession.breakDuration || 0)
+                    actualStudyDuration: newActualDuration,
+                    totalDuration: newActualDuration + (editingSession.breakDuration || 0)
                   });
                   setEditingSession(null);
                 }

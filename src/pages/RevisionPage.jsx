@@ -79,7 +79,7 @@ export function RevisionPage({ setActivePage }) {
               className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition"
             >
               <Plus size={14} />
-              <span>Add Topic</span>
+              <span>Add Revision</span>
             </button>
           </div>
         </div>
@@ -327,10 +327,13 @@ export function RevisionPage({ setActivePage }) {
         setActivePage={setActivePage}
       />
 
-      <TopicModal
-        isOpen={isTopicModalOpen}
-        onClose={() => setIsTopicModalOpen(false)}
-      />
+      {isTopicModalOpen && (
+        <TopicModal
+          isOpen={isTopicModalOpen}
+          onClose={() => setIsTopicModalOpen(false)}
+          defaultStatus="Revision"
+        />
+      )}
 
       <SubjectModal
         isOpen={isSubjectModalOpen}

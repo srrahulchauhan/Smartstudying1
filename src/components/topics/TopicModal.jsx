@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { useStudy } from '../../context/StudyContext';
 
-export function TopicModal({ isOpen, onClose, initialData = null, defaultSubjectId = null }) {
+export function TopicModal({ isOpen, onClose, initialData = null, defaultSubjectId = null, defaultStatus = 'Pending' }) {
   const { preparations, subjects, addSubject, addTopic, updateTopic } = useStudy();
 
   const [formData, setFormData] = useState({
@@ -12,7 +12,7 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
     priority: 'High',
     targetDate: '',
     estimatedStudyTime: 90, // minutes
-    status: 'Pending',
+    status: defaultStatus,
     videoLinks: '',
   });
 
@@ -32,12 +32,12 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
         priority: 'High',
         targetDate: '',
         estimatedStudyTime: 90,
-        status: 'Pending',
+        status: defaultStatus,
         videoLinks: '',
       });
     }
     setErrors({});
-  }, [initialData, defaultSubjectId, subjects, isOpen]);
+  }, [initialData, defaultSubjectId, defaultStatus, subjects, isOpen]);
 
   const validate = () => {
     const errs = {};
@@ -188,6 +188,7 @@ export function TopicModal({ isOpen, onClose, initialData = null, defaultSubject
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
               <option value="Skipped">Skipped</option>
+              <option value="Revision">Revision</option>
             </select>
           </div>
         </div>

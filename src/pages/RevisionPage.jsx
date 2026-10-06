@@ -132,7 +132,7 @@ export function RevisionPage({ setActivePage }) {
           </div>
           <h3 className="font-bold text-slate-900 dark:text-white text-lg relative z-10">Today's Revision</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4 line-clamp-2 relative z-10">
-            Topics scheduled for revision today based on your spaced repetition schedule.
+            Topics you have manually scheduled or marked for pending revision.
           </p>
           <div className="flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform relative z-10">
             <span>View Pending</span>

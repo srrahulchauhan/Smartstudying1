@@ -12,9 +12,8 @@ export function RevisionModal({ isOpen, onClose, mode, setActivePage }) {
 
   if (!isOpen) return null;
 
-  // Filter topics that might need revision (e.g., Completed topics)
-  const completedTopics = topics.filter((t) => t.status === 'Completed' || t.status === 'Revision');
-  const revisionTopics = completedTopics.length > 0 ? completedTopics : topics.slice(0, 5); // fallback if none completed
+  // Filter topics specifically marked for revision
+  const revisionTopics = topics.filter((t) => t.status === 'Revision');
 
   const getSubjectName = (subId) => subjects.find(s => s.id === subId)?.name || 'General';
 
@@ -30,7 +29,7 @@ export function RevisionModal({ isOpen, onClose, mode, setActivePage }) {
 
   const renderTodayRevision = () => (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500 dark:text-slate-400">Topics scheduled for you today based on spaced repetition.</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Topics you have manually marked for pending revision.</p>
       {revisionTopics.length === 0 ? (
         <div className="p-6 text-center text-slate-500 bg-slate-50 dark:bg-dark-900 rounded-xl">No topics due for revision today!</div>
       ) : (
